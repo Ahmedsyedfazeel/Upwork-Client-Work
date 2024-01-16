@@ -1,0 +1,65 @@
+import requests
+from bs4 import BeautifulSoup as bs
+import pandas as pd
+  
+URL = 'https://www.value.today/top-companies/top-software-and-it-companies-europe?title=&field_company_category_primary_target_id=All&page='
+
+datas = [[]]
+for page in range(0,5):
+    req = requests.get(URL + str(page))
+    if(req.status_code==200):
+        POP = []
+        soup = bs(req.text, 'html.parser')
+        Main = soup.find_all('div',attrs={'class':'well node node--type-listed-companies node--view-mode-search-index ds-2col-stacked clearfix'})
+        for i in range(0,10):
+            if page>=0:
+                name = Main[i].find('div',attrs={'class','field field--name-node-title field--type-ds field--label-hidden field--item'})
+                name1 = name.text.replace('\n',"")
+                Country = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-headquarters-of-company field--type-entity-reference field--label-inline'})
+                country1 = Country.text.replace('Headquarters Country',"").replace('\n',"")
+                EmployeeNumber = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-employee-count field--type-integer field--label-above'})
+                if EmployeeNumber is None:
+                    EN = 'None'
+                else:
+                    EN = EmployeeNumber.find('div',attrs={'class':'field--item'}).text
+                AnnualRevenue = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-revenue-in-usd field--type-float field--label-inline'}) 
+                if AnnualRevenue is None:
+                    AR = 'None'
+                else:
+                    AR = AnnualRevenue.find('div',attrs={'class':'field--item'}).text
+                Latestcap = Main[i].find('div',attrs={'class':'clearfix col-sm-6 field field--name-field-market-value-jan072022 field--type-float field--label-above'})
+                if Latestcap is None:
+                    LC = 'None'
+                else:
+                    LC = Latestcap.find('div',attrs={'class':'field--item'}).text
+                kill = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-company-category-primary field--type-entity-reference field--label-above'})
+                if kill is None:
+                    CB = 'None'
+                else:
+                    KL1 = kill.findAll('div',attrs={'class':'field--item'})
+                    CB =  ', '.join(c.text for c in KL1)                        
+                Wikilink = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-wikipedia field--type-link field--label-hidden field--item'})
+                if Wikilink is None:
+                    WLnk = "None"
+                else:
+                    WLnk = Wikilink.find('a').get('href')
+                Twitter =  Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-twitter field--type-link field--label-hidden field--item'})
+                if Twitter is None:
+                    TLnk = "None"
+                else:
+                    TLnk = Twitter.find('a').get('href')
+                site = Main[i].find('div',attrs={'class':'clearfix col-sm-12 field field--name-field-company-website field--type-link field--label-above'})
+                if site is None:
+                    Web = "None"
+                else:
+                    Web = site.find('a').get('href')
+                    
+                data = [name1, country1, EN, AR.replace(' Million',',000,000'), LC.replace(' Billion',',000,000,000'), CB, WLnk, TLnk, Web]
+                datas.append(data)
+                if page == 4 and i >= 7:
+                    break
+    else:
+        Print('URL')
+    
+df = pd.DataFrame(datas, columns = ['Company Name','Country','Employee Number','Annual Revenue','Latest Cap','Company Business','Wikipedia link','Twitter Link','Company Website'])
+df.to_csv(r'C:\Users\LAPTOP POINT\OneDrive\Desktop\ITWebsiteScrapper.csv', index=False)
